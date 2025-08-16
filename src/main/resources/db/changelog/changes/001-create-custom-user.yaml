@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: ivan
+      changes:
+        - createTable:
+            tableName: custom_user
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT AUTO_INCREMENT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: chat_id
+                  type: BIGINT
+              - column:
+                  name: status
+                  type: INT
+              - column:
+                  name: first_value
+                  type: VARCHAR(255)
+              - column:
+                  name: second_value
+                  type: VARCHAR(255)
+              - column:
+                  name: sell
+                  type: BOOLEAN
+              - column:
+                  name: amount
+                  type: DOUBLE

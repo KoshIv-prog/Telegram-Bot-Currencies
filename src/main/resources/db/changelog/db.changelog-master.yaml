@@ -1,0 +1,5 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/changes/001-create-custom-user.yaml
+  - include:
+      file: db/changelog/changes/002-create-user-data.yaml

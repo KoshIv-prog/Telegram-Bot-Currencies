@@ -1,5 +1,8 @@
 package org.example.telegrambot.bot;
 
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.example.telegrambot.domain.UserData;
 import org.example.telegrambot.service.CurrencyService;
 import org.example.telegrambot.service.UserService;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -12,6 +15,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 public enum BotState {
     HelloMSG(){
         @Override
@@ -36,11 +40,19 @@ public enum BotState {
 
         @Override
         public void handleInput(BotData data) {
-            next = FirstValue;
-            if(!sellOrBuyOpts.contains(data.getInput())){
-                errorMessage(data,next);
+            if (checkAdminCommand(data)==1){
+                next = Admin;
+                return;
+            }else if (checkAdminCommand(data)==-1){
+                next = errorMessage(data);
                 return;
             }
+
+            if(!sellOrBuyOpts.contains(data.getInput())){
+                next = errorMessage(data);
+                return;
+            }
+            next = FirstValue;
 
             if (data.equals("Продати")){
                 UserService.setSellOrBuy(data, true);
@@ -51,7 +63,7 @@ public enum BotState {
 
         @Override
         public BotState nextState() {
-            return BotState.FirstValue;
+            return next;
         }
     },
 
@@ -65,12 +77,20 @@ public enum BotState {
 
         @Override
         public void handleInput(BotData data) {
-            next = Amount;
-            if(!currenciesData.contains(data.getInput())){
-                errorMessage(data,next);
+            if (checkAdminCommand(data)==1){
+                next = Admin;
+                return;
+            }else if (checkAdminCommand(data)==-1){
+                next = errorMessage(data);
                 return;
             }
 
+            if(!currenciesData.contains(data.getInput())){
+                next = errorMessage(data);
+                return;
+            }
+
+            next = Amount;
             UserService.setUserCurrency(data, data.getInput(),true);
             executeMessage(data,"Перша валюта - "+data.getInput(), null);
 
@@ -92,17 +112,36 @@ public enum BotState {
 
         @Override
         public void handleInput(BotData data) {
+            if (checkAdminCommand(data)==1){
+                next = Admin;
+                return;
+            }else if (checkAdminCommand(data)==-1){
+                next = errorMessage(data);
+                return;
+            }
+
+            Double amount;
             if (!amountOpts.contains(data.getInput())){
-                errorMessage(data,next);
+                next = errorMessage(data);
                 return;
             }
             if(data.getInput().equals("Custom")){
                 next = CustomAmount;
                 return;
             }
+
+            try {
+                amount = Double.valueOf(data.getInput());
+                System.out.println(amount);
+            }catch (NumberFormatException e){
+                System.out.println(e.getMessage());
+                next = errorMessage(data);
+                return;
+            }
+
             next = SecondValue;
-            UserService.setUserAmount(data, Double.valueOf(data.getInput()));
-            executeMessage(data,"Кількість - "+data, null);
+            UserService.setUserAmount(data,amount);
+            executeMessage(data,"Кількість - "+amount, null);
         }
 
         @Override
@@ -121,11 +160,18 @@ public enum BotState {
 
         @Override
         public void handleInput(BotData data) {
+            if (checkAdminCommand(data)==1){
+                next = Admin;
+            }else if (checkAdminCommand(data)==-1){
+                next = errorMessage(data);
+                return;
+            }
+
             Double amount;
             try{
                 amount = Double.valueOf(data.getInput());
             }catch (NumberFormatException e){
-                errorMessage(data,next);
+                next = errorMessage(data);
                 return;
             }
             next = SecondValue;
@@ -149,11 +195,19 @@ public enum BotState {
 
         @Override
         public void handleInput(BotData data) {
-            next = Unswer;
-            if(!currenciesData.contains(data.getInput())){
-                errorMessage(data,next);
+            if (checkAdminCommand(data)==1){
+                next = Admin;
+            }else if (checkAdminCommand(data)==-1){
+                next = errorMessage(data);
                 return;
             }
+
+            if(!currenciesData.contains(data.getInput())){
+                next = errorMessage(data);
+                return;
+            }
+
+            next = Unswer;
             UserService.setUserCurrency(data, data.getInput(),false);
             executeMessage(data,"Друга валюта - "+data.getInput(), null);
         }
@@ -169,19 +223,109 @@ public enum BotState {
         BotState next;
         @Override
         public void enter(BotData data) {
+            String unswer = "";
             try {
-                executeMessage(data, CurrencyService.getCurrencyRates(data),null);
-            } catch (IOException | ParseException e) {
-                System.out.println(e.getMessage());
-                errorMessage(data,next);
+                unswer = CurrencyService.getCurrencyRates(data);
+            } catch (Exception e) {
+                next = errorMessage(data);
                 return;
             }
+            executeMessage(data, unswer, null);
             next = Start;
         }
 
         @Override
         public BotState nextState() {
             return next;
+        }
+    },
+    Admin{
+        BotState next;
+        @Override
+        public void enter(BotData data) {
+            executeMessage(data,"Це панель адміністратора"+System.lineSeparator()+"Що хочете дізнатися?",getButtons(adminOpts,adminOpts));
+        }
+
+        @Override
+        public void handleInput(BotData data) {
+            if (!adminOpts.contains(data.getInput())){
+                errorMessage(data);
+                next = Admin;
+            }
+
+            if (data.getInput().equals("Показати всі обрахунки")){
+                UserService.getAllCounts().forEach(count->{
+                    executeMessage(data,
+                            "Час - "+count.getDate()+System.lineSeparator()+
+                                    "Імя - "+count.getFirstName()+System.lineSeparator()+
+                                    "Фамілія - "+count.getLastName()+System.lineSeparator()+
+                                    "Username - "+count.getUsername()+System.lineSeparator()+
+                                    count.getTransaction()
+                            ,null);
+                });
+                next = Admin;
+            }else if (data.getInput().equals("Показати обрахунки кристувача")){
+                next = UserCounts;
+            }else if (data.getInput().equals("Показати нові обрахунки")){
+                List<UserData> counts = UserService.getAllNewCounts();
+                if (counts.isEmpty()){
+                    executeMessage(data,"Жодних нових повідомлень",null);
+                    next = Admin;
+                    return;
+                }
+
+                counts.forEach(count->{
+                    executeMessage(data,
+                            "Час - "+count.getDate()+System.lineSeparator()+
+                                    "Імя - "+count.getFirstName()+System.lineSeparator()+
+                                    "Фамілія - "+count.getLastName()+System.lineSeparator()+
+                                    "Username - "+count.getUsername()+System.lineSeparator()+
+                                    count.getTransaction()
+                            ,null);
+                });
+                next = Admin;
+            }else if (data.getInput().equals("Кількість користувачів")){
+                executeMessage(data, "Кількість користувачів - "+UserService.countAllUsers(),null);
+                next = Admin;
+            }else if (data.getInput().equals("Повернутися")){
+                next = Start;
+            }
+        }
+
+        @Override
+        public BotState nextState() {
+            return next;
+        }
+    },
+    UserCounts{
+        @Override
+        public void enter(BotData data) {
+            executeMessage(data, "Ведіть username користувача",null);
+        }
+
+        @Override
+        public void handleInput(BotData data) {
+            List<UserData> userCounts = UserService.getAllUserCounts(data);
+
+            if (userCounts.isEmpty()){
+                executeMessage(data,"Немає повідомлень від користувача",null);
+                return;
+            }
+
+            userCounts.forEach(count->{
+                executeMessage(data,
+                        "Час - "+count.getDate()+System.lineSeparator()+
+                                "Імя - "+count.getFirstName()+System.lineSeparator()+
+                                "Фамілія - "+count.getLastName()+System.lineSeparator()+
+                                "Username - "+count.getUsername()+System.lineSeparator()+
+                                count.getTransaction()
+                        ,null);
+            });
+        }
+
+        @Override
+        public BotState nextState() {
+            return Admin;
         }
     };
 
@@ -209,6 +353,21 @@ public enum BotState {
         }
 
         return states[id];
+    }
+
+    @Setter
+    private static String password;
+
+    protected Integer checkAdminCommand(BotData data) {
+        String msg = data.getInput();
+        if (!msg.contains("/Admin")){
+            return 0;
+        }
+        if (password != null && msg.contains(password)){
+            executeMessage(data, "Панель адміна" ,null);
+            return 1;
+        }
+        return -1;
     }
 
     protected void executeMessage(BotData data, String message, InlineKeyboardMarkup inlineKeyboardMarkup) {
@@ -240,12 +399,12 @@ public enum BotState {
         return inlineKeyboardMarkup;
     }
 
-    protected void errorMessage(BotData data, BotState nextState) {
+    protected BotState errorMessage(BotData data) {
         executeMessage(data,"Вибачте, сталася помилка, спробуйте знову",null);
         UserService.setUserState(data, 0);
         UserService.errorErase(data);
 
-        nextState = Start;
+        return Start;
     }
 
     public boolean isInputNeeded() {
@@ -266,6 +425,12 @@ public enum BotState {
             "\uD83C\uDDE8\uD83C\uDDFF CZK \uD83C\uDDE8\uD83C\uDDFF");
     static protected final List<String> sellOrBuyOpts = List.of("Продати","Купувати");
     static protected final List<String> amountOpts = List.of("1","10","50","100","Custom");
+    static protected final List<String> adminOpts = List.of(
+            "Показати всі обрахунки",
+            "Показати обрахунки кристувача",
+            "Показати нові обрахунки",
+            "Кількість користувачів",
+            "Повернутися");
 
 
 }

@@ -2,6 +2,8 @@ package org.example.telegrambot.service;
 
 import org.example.telegrambot.bot.BotData;
 import org.example.telegrambot.domain.CustomUser;
+import org.example.telegrambot.domain.UserData;
+import org.example.telegrambot.repository.UserDataRepository;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -46,10 +48,15 @@ public class CurrencyService {
             currencyMap.put(key, uahObject.getDouble(key));
         }
 
-
-
-        return "По курсу "+ currency1.toUpperCase()+ " до "+ currency2.toUpperCase() + System.lineSeparator()+
+        String answer = "По курсу "+ currency1.toUpperCase()+ " до "+ currency2.toUpperCase() + System.lineSeparator()+
                 "Є : "+amount+" "+ currency1.toUpperCase() + " за " + currencyMap.get(currency2)*amount+" " + currency2.toUpperCase();
+
+        UserData userData = data.getUserData();
+        userData.setTransaction(answer);
+        userData.setAmount(amount);
+        UserService.getUserDataRepository().save(userData);
+
+        return answer;
 
     }
 

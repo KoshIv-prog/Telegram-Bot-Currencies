@@ -1,22 +1,39 @@
 package org.example.telegrambot.domain;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import lombok.Data;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+
+
 @Entity
+@Table(name = "custom_user")
+@NoArgsConstructor
+@Setter
+@Getter
 public class CustomUser {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
+
+    @Column(name = "chat_id")
     private Long chatId;
+
+    @Column(name = "status")
     private Integer status;
+
+    @Column(name = "`first_value`")
     private String firstValue;
+
+    @Column(name = "`second_value`")
     private String secondValue;
+
+    @Column(name = "sell")
     private Boolean sell;
+
+    @Column(name = "amount")
     private Double amount;
 
     public CustomUser(Long chatId, Integer status, String firstValue, String secondValue, Boolean sell) {
@@ -27,7 +44,4 @@ public class CustomUser {
         this.sell = sell;
     }
 
-    public CustomUser() {
-
-    }
 }

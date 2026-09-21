@@ -7,8 +7,9 @@ databaseChangeLog:
             tableName: user_data
             columns:
               - column:
-                  name: user_id
-                  type: BIGINT AUTO_INCREMENT
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
                   constraints:
                     primaryKey: true
                     nullable: false

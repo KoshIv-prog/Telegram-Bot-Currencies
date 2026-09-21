@@ -24,10 +24,10 @@ public class CustomUser {
     @Column(name = "status")
     private Integer status;
 
-    @Column(name = "`first_value`")
+    @Column(name = "first_currency")
     private String firstValue;
 
-    @Column(name = "`second_value`")
+    @Column(name = "second_currency")
     private String secondValue;
 
     @Column(name = "sell")

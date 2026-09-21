@@ -8,7 +8,8 @@ databaseChangeLog:
             columns:
               - column:
                   name: id
-                  type: BIGINT AUTO_INCREMENT
+                  type: BIGINT
+                  autoIncrement: true
                   constraints:
                     primaryKey: true
                     nullable: false
@@ -19,10 +20,10 @@ databaseChangeLog:
                   name: status
                   type: INT
               - column:
-                  name: first_value
+                  name: first_currency
                   type: VARCHAR(255)
               - column:
-                  name: second_value
+                  name: second_currency
                   type: VARCHAR(255)
               - column:
                   name: sell

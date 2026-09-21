@@ -15,7 +15,7 @@ import java.util.Date;
 public class UserData {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_id")
+    @Column(name = "id")
     private Long id;
 
     @OneToOne()
